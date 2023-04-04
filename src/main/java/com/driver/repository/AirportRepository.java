@@ -15,7 +15,6 @@ public class AirportRepository {
     HashMap<Integer, Flight> flightDB;
     HashMap<Integer, Passenger> passengerDB;
     HashMap<Integer, Set<Integer>> flightPassengerDB; // key: flightID, values: set of passengerIDs
-//    HashMap<Integer, Set<Integer>> passengerFlightDB; // key: passengerID, values: set of flightIDs
 
     public AirportRepository() {
         this.airportDB = new HashMap<>();
@@ -25,19 +24,19 @@ public class AirportRepository {
     }
 
     public void addAirport(Airport airport){
-        airportDB.put(airport.getAirportName(), airport);
+        String key = airport.getAirportName();
+        if(key != null) airportDB.put(airport.getAirportName(), airport);
     }
 
-    public String getLargestAirportName() {
+    public String getLargestAirportName(){
         String ans = "";
         int terminals = 0;
-        for(Airport airport : airportDB.values()){
-
-            if(airport.getNoOfTerminals()>terminals){
+        for(Airport airport : airportDB.values()) {
+            if(airport.getNoOfTerminals() > terminals) {
                 ans = airport.getAirportName();
                 terminals = airport.getNoOfTerminals();
-            }else if(airport.getNoOfTerminals()==terminals){
-                if(airport.getAirportName().compareTo(ans)<0){
+            } else if(airport.getNoOfTerminals() == terminals) {
+                if(airport.getAirportName().compareTo(ans) < 0) {
                     ans = airport.getAirportName();
                 }
             }
@@ -63,10 +62,11 @@ public class AirportRepository {
             return 0;
         }
         int totalPeople = 0;
+        City city = airport.getCity();
         for(Flight flight : flightDB.values()) {
-            String fromCity = flight.getFromCity().toString();
-            String toCity = flight.getToCity().toString();
-            if(flight.getFlightDate().compareTo(date) == 0 && (fromCity.equals(airportName) || toCity.equals(airportName))) {
+            City fromCity = flight.getFromCity();
+            City toCity = flight.getToCity();
+            if(flight.getFlightDate().equals(date) && (fromCity.equals(city) || toCity.equals(city))) {
                 totalPeople += flightPassengerDB.get(flight.getFlightId()).size();
             }
         }
@@ -84,14 +84,22 @@ public class AirportRepository {
     }
 
     public String bookATicket(Integer flightId,Integer passengerId){
-
-        if(!flightDB.containsKey(flightId)) { // if already booked
+//        Flight flight = flightDB.get(flightId);
+//        Passenger passenger = passengerDB.get(passengerId);
+//        if(Objects.isNull(flight) || Objects.isNull(passenger)) return "FAILURE";
+        if(!flightDB.containsKey(flightId)) {
             return "FAILURE";
         } else {
-            Set<Integer> passengers = flightPassengerDB.get(flightId);
+            Set<Integer> passengers;
+            if(Objects.isNull(flightPassengerDB.get(flightId))) {
+                passengers = new HashSet<>();
+            } else {
+                passengers = flightPassengerDB.get(flightId);
+            }
+
             int maxCapacity = flightDB.get(flightId).getMaxCapacity();
 
-            if(!passengerDB.containsKey(passengerId) ||passengers.size() >= maxCapacity || passengers.contains(passengerId)) {
+            if(!passengerDB.containsKey(passengerId) || passengers.size() >= maxCapacity || passengers.contains(passengerId)) {
                 return "FAILURE";
             }
 
@@ -106,7 +114,7 @@ public class AirportRepository {
             return "FAILURE";
         } else {
             Set<Integer> passengers = flightPassengerDB.get(flightId);
-            if( !passengerDB.containsKey(passengerId)||!passengers.contains(passengerId)) return "FAILURE";
+            if(passengers == null || !passengerDB.containsKey(passengerId) || !passengers.contains(passengerId)) return "FAILURE";
             else {
                 passengers.remove(passengerId);
                 flightPassengerDB.put(flightId, passengers);
@@ -134,19 +142,21 @@ public class AirportRepository {
         City fromCity = flightDB.get(flightId).getFromCity();
         for(Airport airport : airportDB.values()) {
             if (airport.getCity().equals(fromCity)) {
-                return fromCity.toString();
+                return airport.getAirportName();
             }
         }
         return null;
     }
 
     public int calculateRevenueOfAFlight(Integer flightId){
-        int noOfPeopleBooked = flightPassengerDB.get(flightId).size();
-        int variableFare = (noOfPeopleBooked*(noOfPeopleBooked+1))*25;
-        int fixedFare = 3000*noOfPeopleBooked;
-        int totalFare = variableFare + fixedFare;
-
-        return totalFare;
+        int totalRevenue = 0;
+        if(flightDB.containsKey(flightId)) {
+            Set<Integer> passengers = flightPassengerDB.get(flightId);
+            for(int i = 0; i < passengers.size(); i++) {
+                totalRevenue += (3000 + (i*50));
+            }
+        }
+        return totalRevenue;
     }
 
     public void addPassenger(Passenger passenger){
@@ -154,4 +164,3 @@ public class AirportRepository {
         passengerDB.put(passengerID, passenger);
     }
 }
-
